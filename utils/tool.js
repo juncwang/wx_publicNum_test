@@ -5,6 +5,7 @@
 const { parseString } = require('xml2js')
 
 module.exports = {
+    // 获取 req 的 POST 请求数据
     getUserDataAsync(req) {
         return new Promise((resolve, reject) => {
             let xmlData = ''
@@ -21,6 +22,7 @@ module.exports = {
                 })
         })
     },
+    // 将 xml 字符串转成 js 对象
     parseXMLAsync(xmlData) {
         return new Promise((resolve, reject) => {
             parseString(xmlData, { trim: true }, (err, data) => {
@@ -32,6 +34,7 @@ module.exports = {
             })
         })
     },
+    // 提取 js 对象
     formatMessage(jsData) {
         let message = {}
         // 获取 xml 对象

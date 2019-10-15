@@ -35,12 +35,12 @@
 
 // 引入 fs 模块
 const { writeFile, readFile } = require("fs");
-
 // 引入 request-promise-native 模块
 const rp = require("request-promise-native");
-
 // 引入 config 模块
 const { appID, appsecret } = require("../config");
+// 引入 menu 模块
+const menu = require('./menu')
 
 // 定义类, 获取 access_token
 class Wechat {
@@ -193,66 +193,64 @@ class Wechat {
                 return Promise.resolve(res);
             });
     }
+
+    /**
+     * 用来创建自定义菜单
+     * @param menu 菜单配置对象
+     * @return {Promise<any>}
+     */
+    createMenu(menu) {
+        return new Promise(async (resolve, reject) => {
+            try {
+                // 获取 access_token
+                const data = await this.fetchAccessToken()
+                // 定义请求地址
+                const url = `https://api.weixin.qq.com/cgi-bin/menu/create?access_token=${data.access_token}`
+                // 发送请求
+                const result = await rp({
+                    method: 'POST',
+                    url: url,
+                    json: true,
+                    body: menu
+                })
+                resolve(result)
+            } catch (e) {
+                reject('createMenu is error : ' + e)
+            }
+        })
+    }
+
+    /**
+     * 用来删除自定义菜单
+     * @return {Promise<any>}
+     */
+    delectMenu() {
+        return new Promise(async (resolve, reject) => {
+            try {
+                const data = await this.fetchAccessToken()
+                const url = `https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=${data.access_token}`
+                const result = await rp({
+                    method: 'GET',
+                    url: url,
+                    json: true
+                })
+                resolve(result)
+            } catch (e) {
+                reject('delectMenu is error : ' + e)
+            }
+        })
+    }
 }
 
-// 模拟测试
-// const w = new Wechat();
 
-// 模拟获取 access_token
-// w.getAccessToken();
+(async () => {
+    // 模拟测试
+    const w = new Wechat()
 
-// 读取本地文件 (readAccessToken)
-// new Promise((resolve, reject) => {
-//   w.readAccessToken()
-//     .then(res => {
-//       // 本地有文件
-//       // 判断它是否过期
-//       if (w.isValidAccessToken(res)) {
-//         // 有效的
-//         resolve(res);
-//       } else {
-//         // 过期了
-//         // 发送请求获取 access_token(getAccessToken)
-//         w.getAccessToken()
-//           .then(res => {
-//             // 保存下来(本地文件) (saveAccessToken)
-//             w.saveAccessToken(res)
-//               .then(() => {
-//                 resolve(res);
-//               })
-//               .catch(err => {
-//                 reject(err);
-//               });
-//           })
-//           .catch(err => {
-//             reject(err);
-//           });
-//       }
-//     })
-//     .catch(err => {
-//       // 本地没有文件
-//       // 发送请求获取 access_token (getAccessToken)
-//       w.getAccessToken()
-//         .then(res => {
-//           // 保存下来(本地文件) (saveAccessToken)
-//           w.saveAccessToken(res)
-//             .then(() => {
-//               resolve(res);
-//             })
-//             .catch(err => {
-//               reject(err);
-//             });
-//         })
-//         .catch(err => {
-//           reject(err);
-//         });
-//     });
-// })
-//   .then(res => {
-//     // console.log(res)
-//     resolve(res);
-//   })
-//   .catch(err => {
-//     // console.error(err)
-//     reject(err);
-//   });
+    // 删除之前定义的自定义菜单
+    let result = await w.delectMenu()
+    console.log(result)
+    // 创建新的自定义菜单
+    result = await w.createMenu(menu)
+    console.log(result)
+})()

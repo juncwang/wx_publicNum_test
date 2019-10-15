@@ -23,6 +23,10 @@ const sha1 = require("sha1");
 const config = require("../config");
 // 引入 tool 模块
 const { getUserDataAsync, parseXMLAsync, formatMessage } = require("../utils/tool");
+// 引入 template 模块
+const template = require('./template')
+// 引入 reply 模块
+const reply = require('./reply')
 
 module.exports = () => {
     return async (req, res, next) => {
@@ -110,7 +114,36 @@ module.exports = () => {
             const jsData = await parseXMLAsync(xmlData)
             // console.log(jsData)
             const message = formatMessage(jsData)
-            console.log(message)
+            // console.log(message)
+            /**
+             * {
+             *      ToUserName: 'gh_6705c9bf3656',
+             *      FromUserName: 'obceVv_Pl3djsLNPz-u8gS5tjksA',
+             *      CreateTime: '1571103659',
+             *      MsgType: 'text',
+             *      Content: 'hello world',
+             *      MsgId: '22492795484274897'
+             * }
+             */
+
+            // 简单消息自动回复, 回复文本内容
+            /**
+             * 一旦遇到以下情况, 微信都会在公众号会话中, 向用户下发系统提示'该公众号暂时无法提供服务, 请稍后再试'
+             * 1. 开发者在 5 秒内未回复任何内容
+             * 2. 开发者回复了异常数据, 比如 JSON 数据、字符串、xml 数据中有多余的空格*****等
+             */
+            
+            const options = reply(message)
+            
+
+            
+
+            // 最终回复用户的消息
+            const replyMessage = template(options)
+            console.log(replyMessage)
+
+            // 返回响应给微信服务器
+            res.send(replyMessage)
 
 
             // 如果开发者服务器没有返回响应给微信服务器, 微信服务器会发送三次请求过来
