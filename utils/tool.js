@@ -63,13 +63,13 @@ module.exports = {
         return message
     },
     // 同步保存文件
-    writeFileAsync(data, fileNane) {
-        const filePath = resolve(__dirname, fileNane)
+    writeFileAsync(data, fileName) {
+        const filePath = resolve(__dirname, fileName)
         data = JSON.stringify(data);
         return new Promise((resolve, reject) => {
             writeFile(filePath, data, err => {
                 if (!err) {
-                    console.log(fileNane + "文件保存成功");
+                    console.log(fileName + "文件保存成功");
                     resolve();
                 } else {
                     reject("writeFileAsync is error : " + err);
@@ -79,7 +79,7 @@ module.exports = {
     },
     // 同步读取文件
     readFileAsync(fileName) {
-        const filePath = resolve(__dirname, fileNane)
+        const filePath = resolve(__dirname, fileName)
         return new Promise((resolve, reject) => {
             readFile(filePath, (err, data) => {
                 if (!err) {
