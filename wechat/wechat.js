@@ -33,12 +33,14 @@
  *                  - 发送请求获取 access_token (getAccessToken), 保存下来(本地文件) (saveAccessToken), 直接使用
  */
 
-// 引入 fs 模块
-const { writeFile, readFile } = require("fs");
 // 引入 request-promise-native 模块
 const rp = require("request-promise-native");
 // 引入 config 模块
 const { appID, appsecret } = require("../config");
+// 引入 api 模块
+const api = require('../utils/api')
+// 引入 tool 模块
+const { writeFileAsync, readFileAsync } = require('../utils/tool')
 // 引入 menu 模块
 const menu = require('./menu')
 
@@ -51,13 +53,15 @@ class Wechat {
      *
      */
     getAccessToken() {
-        const url = `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${appID}&secret=${appsecret}`;
-        // 发送请求
-        /**
-         * request
-         * request-promise-native 返回值是一个 promise 对象
-         */
+        // 定义请求地址
+        const url = `${api.accessToken}appid=${appID}&secret=${appsecret}`;
+
         return new Promise((resolve, reject) => {
+            // 发送请求
+            /**
+             * request
+             * request-promise-native 返回值是一个 promise 对象
+             */
             rp({
                 method: "GET",
                 url: url,
@@ -87,36 +91,14 @@ class Wechat {
      * @param accessToken 要保存的凭据
      */
     saveAccessToken(accessToken) {
-        // 将对象转换成 json 字符串
-        accessToken = JSON.stringify(accessToken);
-        // 将 access_token 保存一个文件
-        return new Promise((resolve, reject) => {
-            writeFile("./accessToken.txt", accessToken, err => {
-                if (!err) {
-                    console.log("文件保存成功");
-                    resolve();
-                } else {
-                    reject("saveAccessToken is error : " + err);
-                }
-            });
-        });
+        return writeFileAsync(accessToken, 'accessToken.txt')
     }
 
     /**
      * 用来读取 access_token
      */
     readAccessToken() {
-        return new Promise((resolve, reject) => {
-            readFile("./accessToken.txt", (err, data) => {
-                if (!err) {
-                    console.log("文件读取成功");
-                    data = JSON.parse(data);
-                    resolve(data);
-                } else {
-                    reject("readAccessToken is error : " + err);
-                }
-            });
-        });
+        return readFileAsync('accessToken.txt')
     }
 
     /**
@@ -194,6 +176,91 @@ class Wechat {
             });
     }
 
+        /**
+     * 用来获取 jsapi_ticket
+     *
+     */
+    getJsapiTicket() {
+        return new Promise(async (resolve, reject) => {
+            const data = await this.fetchAccessToken()
+            const url = `${api.jsapiTicket}access_token=${data.access_token}`
+            rp({
+                method: "GET",
+                url: url,
+                json: true
+            })
+                .then(res => {
+                    resolve({
+                        jsapi_ticket: res.ticket,
+                        expires_in: Date.now() + (res.expires_in - 300) * 1000
+                    });
+                })
+                .catch(err => {
+                    reject("getJsapiTicket is error : " + err)
+                })
+        })
+    }
+
+    /**
+     * 用来保存 jsapi_ticket
+     * @param jsapiTicket 要保存的凭据
+     */
+    saveJsapiTicket(jsapiTicket) {
+        return writeFileAsync(jsapiTicket, 'jsapiTicket.txt')
+    }
+
+    /**
+     * 用来读取 jsapi_ticket
+     */
+    readJsapiTicket() {
+        return readFileAsync('jsapiTicket.txt')
+    }
+
+    /**
+     * 用来检测 jsapi_ticket 是否有效
+     * @param jsapiTicket
+     */
+    isValidJsapiTicket(data) {
+        if (!data && !data.jsapi_ticket && !data.ticket_expires_in) {
+            return false;
+        }
+        return data.expires_in > Date.now();
+    }
+
+    /**
+     * 用来获取没有过期的 jsapi_ticket
+     * @return {Promise<any>}
+     */
+    fetchJsapiTicket() {
+        if (this.jsapi_ticket && this.ticket_expires_in && this.isValidJsapiTicket(this)) {
+            return Promise.resolve({
+                jsapi_ticket: this.jsapi_ticket,
+                expires_in: this.ticket_expires_in
+            });
+        }
+
+        return this.readJsapiTicket()
+            .then(async res => {
+                if (this.isValidJsapiTicket(res)) {
+                    return Promise.resolve(res);
+                } else {
+                    const res = await this.getJsapiTicket();
+                    await this.saveJsapiTicket(res);
+                    return Promise.resolve(res);
+                }
+            })
+            .catch(async err => {
+                const res = await this.getJsapiTicket();
+                await this.saveJsapiTicket(res);
+                return Promise.resolve(res);
+            })
+            .then(res => {
+                this.jsapi_ticket = res.jsapi_ticket;
+                this.ticket_expires_in = res.expires_in;
+                return Promise.resolve(res);
+            });
+    }
+
     /**
      * 用来创建自定义菜单
      * @param menu 菜单配置对象
@@ -205,7 +272,7 @@ class Wechat {
                 // 获取 access_token
                 const data = await this.fetchAccessToken()
                 // 定义请求地址
-                const url = `https://api.weixin.qq.com/cgi-bin/menu/create?access_token=${data.access_token}`
+                const url = `${api.menu.create}access_token=${data.access_token}`
                 // 发送请求
                 const result = await rp({
                     method: 'POST',
@@ -228,7 +295,7 @@ class Wechat {
         return new Promise(async (resolve, reject) => {
             try {
                 const data = await this.fetchAccessToken()
-                const url = `https://api.weixin.qq.com/cgi-bin/menu/delete?access_token=${data.access_token}`
+                const url = `${api.menu.delete}access_token=${data.access_token}`
                 const result = await rp({
                     method: 'GET',
                     url: url,
@@ -247,10 +314,16 @@ class Wechat {
     // 模拟测试
     const w = new Wechat()
 
-    // 删除之前定义的自定义菜单
-    let result = await w.delectMenu()
-    console.log(result)
-    // 创建新的自定义菜单
-    result = await w.createMenu(menu)
-    console.log(result)
+    // // 删除之前定义的自定义菜单
+    // let result = await w.delectMenu()
+    // console.log(result)
+    // // 创建新的自定义菜单
+    // result = await w.createMenu(menu)
+    // console.log(result)
+
+    const data = await w.fetchJsapiTicket()
+    console.log(data)
 })()
+
+
+

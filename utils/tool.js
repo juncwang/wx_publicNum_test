@@ -1,6 +1,11 @@
 /**
  * 工具函数包
  */
+
+// 引入 fs 模块
+const { writeFile, readFile } = require("fs");
+// 引入 path 模块
+const { resolve } = require('path')
 // 引入 xml2js, 将 xml 数据转化成 js 对象
 const { parseString } = require('xml2js')
 
@@ -41,14 +46,14 @@ module.exports = {
         jsData = jsData.xml
         // console.log(jsData)
         // 判断数据是否是一个对象
-        if(typeof jsData === 'object') {
+        if (typeof jsData === 'object') {
             // 遍历对象
-            for(let key in jsData) {
+            for (let key in jsData) {
                 // 获取属性值
                 let value = jsData[key]
                 // console.log(value)
                 // 过滤掉空的数据
-                if(Array.isArray(value) && value.length > 0) {
+                if (Array.isArray(value) && value.length > 0) {
                     // 将合法的数据复制到 message 对象上
                     message[key] = value[0]
                     // console.log(message[key])
@@ -56,5 +61,35 @@ module.exports = {
             }
         }
         return message
+    },
+    // 同步保存文件
+    writeFileAsync(data, fileNane) {
+        const filePath = resolve(__dirname, fileNane)
+        data = JSON.stringify(data);
+        return new Promise((resolve, reject) => {
+            writeFile(filePath, data, err => {
+                if (!err) {
+                    console.log(fileNane + "文件保存成功");
+                    resolve();
+                } else {
+                    reject("writeFileAsync is error : " + err);
+                }
+            });
+        });
+    },
+    // 同步读取文件
+    readFileAsync(fileName) {
+        const filePath = resolve(__dirname, fileNane)
+        return new Promise((resolve, reject) => {
+            readFile(filePath, (err, data) => {
+                if (!err) {
+                    console.log(fileName + "文件读取成功");
+                    data = JSON.parse(data);
+                    resolve(data);
+                } else {
+                    reject("readJsapiTicket is error : " + err);
+                }
+            });
+        });
     }
 }

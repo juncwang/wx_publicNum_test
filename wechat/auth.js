@@ -97,7 +97,7 @@ module.exports = () => {
 
             // console.log(req.query)
 
-            // 接受请求体重的数据, 流式数据
+            // 接受 POST 请求的数据, 流式数据
             const xmlData = await getUserDataAsync(req)
             // console.log(xmlData)
             // xmlData
