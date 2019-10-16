@@ -310,20 +310,21 @@ class Wechat {
 }
 
 
-(async () => {
-    // 模拟测试
-    const w = new Wechat()
+// (async () => {
+//     // 模拟测试
+//     const w = new Wechat()
 
-    // // 删除之前定义的自定义菜单
-    // let result = await w.delectMenu()
-    // console.log(result)
-    // // 创建新的自定义菜单
-    // result = await w.createMenu(menu)
-    // console.log(result)
+//     // // 删除之前定义的自定义菜单
+//     // let result = await w.delectMenu()
+//     // console.log(result)
+//     // // 创建新的自定义菜单
+//     // result = await w.createMenu(menu)
+//     // console.log(result)
 
-    const data = await w.fetchJsapiTicket()
-    console.log(data)
-})()
+//     const data = await w.fetchJsapiTicket()
+//     console.log(data)
+// })()
 
+module.exports = Wechat
 
 
